@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace ServiceInvioMail
 {
-   public class Classi
-    {
+   
         public class MailDto
         {
             public string Destinatario { set; get; }//ToRiceved destinatario
@@ -55,5 +54,22 @@ namespace ServiceInvioMail
             public Nullable<int> Esito { get; set; }
             public Nullable<int> Tipo { get; set; }
         }
-    }
+
+        public class Articoli
+        {
+            public string IdArticolo { get; set; }
+            public string DescriArticolo { get; set; }
+            public int? QuantiInMagazzino { get; set; }
+            public int? MinMagazzino { get; set; }
+
+        }
+
+        //public class CampiPdf
+        //{
+        //    public string Campo1 { get; set; }
+        //    public string Campo2 { get; set; }
+        //    public string Campo3 { get; set; }
+        //    public string Campo4 { get; set; }
+        //}
+
 }

@@ -7,21 +7,22 @@ using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Avalon.EntityDto;
 
 namespace ServiceInvioMail
 {
-   public class MailUtilityCon
+    public class MailUtilityCon
     {
-        public Classi.MailDto GetMailImpo(int idImpo, string conNection)
+        public MailDto GetMailImpo(int idImpo, string conNection)
         {
-            Classi.MailDto lst = new Classi.MailDto();
+            MailDto lst = new MailDto();
             try
             {
                 var con = new MaylUtilityDac("System.Data.SqlClient", conNection);
                 var ds = con.GetMailImpo(idImpo);
-                lst = new Classi.MailDto();
+                lst = new MailDto();
                 lst = (from DataRow dr in ds.Tables[0].Rows
-                       select new Classi.MailDto()
+                       select new MailDto()
                        {
                            Destinatario = dr["ToRiceved"].ToString(),
                            DestinatarioLst = dr["MailLst"].ToString(),
@@ -48,18 +49,18 @@ namespace ServiceInvioMail
                 MethodBase currentMethodName = sf.GetMethod();
                 string errore = $"Funzione {currentMethodName.Name}; Errore: {ex.Message}";
                 var dex = new DataException(ex.Message);
-                throw new FaultException<DataException>(dex, new FaultReason(errore), new FaultCode("Sender"), null);
+
             }
             return lst;
         }
 
         public async Task<bool> ControlloCarenzeMagazzino(string conNection, string percorso) //string percorso = Server.MapPath("~/");
         {
-            var conn = new Avalon.Connection.AnagraficaCon();
-            var lst = conn.GetMaterialiMancantiInCommessa(conNection);
-            if (lst.Articoli.Count > 0)
+
+            var lst = GetMaterialiMancantiCon(conNection);
+            if (lst.Count > 0)
             {
-                var campi = lst.Articoli.Select(aa => new CampiPdf { Campo1 = aa.IdArticolo, Campo2 = aa.DescriArticolo, Campo3 = aa.QuantiMagazzinoInt.ToString(), Campo4 = aa.MinMagazzino.ToString() }).ToList();
+                var campi = lst.Select(aa => new CampiPdf { Campo1 = aa.IdArticolo, Campo2 = aa.DescriArticolo, Campo3 = aa.QuantiInMagazzino.ToString(), Campo4 = aa.MinMagazzino.ToString() }).ToList();
 
                 var crea = new LibreriaPDF.PdfGenerici();
                 var fileStampa = crea.StampaListaMateriali(percorso, "LstMateriali", campi);
@@ -71,10 +72,10 @@ namespace ServiceInvioMail
             return false;
         }
 
-        public async Task<bool> SendMailAsyncNew(Classi.MailDto impoMail, string fileAllegato, string conNection)
+        public async Task<bool> SendMailAsyncNew(MailDto impoMail, string fileAllegato, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
-            var mailLog = new Classi.MailLogDto();
+            var mailLog = new MailLogDto();
             mailLog.Data = DateTime.Now;
             mailLog.Commenti = $"Invio file a {impoMail.Destinatario ?? impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: { impoMail.Messaggio}; ";
             try
@@ -134,5 +135,31 @@ namespace ServiceInvioMail
             conMail.SaveMailLog(mailLog.Commenti, mailLog.Esito, mailLog.Tipo);
             return true;
         }
+
+        public List<Articoli> GetMaterialiMancantiCon(string conAVdb)
+        {
+            var lst = new List<Articoli>();
+
+            try
+            {
+                var inDb = new MaylUtilityDac("System.Data.SqlClient", conAVdb);
+                var ds = inDb.GetMaterialiMancanti();
+
+                lst = (from DataRow dr in ds.Tables[0].Rows
+                       select new Articoli()
+                       {
+                           IdArticolo = dr["IdArticolo"].ToString(),
+                           DescriArticolo = dr["Descrizione"].ToString(),
+                           QuantiInMagazzino = !dr.IsNull("Quantita") ? Convert.ToInt32(dr["Quantita"].ToString()) : 0,
+                           MinMagazzino = !dr.IsNull("MinMagazzino") ? Convert.ToInt32(dr["MinMagazzino"].ToString()) : 0
+                       }).ToList();
+            }
+            catch (Exception e)
+            {
+
+            }
+            return lst;
+        }
+
     }
 }

@@ -33,8 +33,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Avalon.EntityDto">
+      <HintPath>..\..\..\AvalonNetworkNew\Avalon.EntityDto\bin\Debug\netstandard2.0\Avalon.EntityDto.dll</HintPath>
+    </Reference>
     <Reference Include="DBWork">
       <HintPath>..\..\..\DBWork\bin\Debug\DBWork.dll</HintPath>
+    </Reference>
+    <Reference Include="LibreriaPDF">
+      <HintPath>..\..\..\AvalonNetworkNew\LibreriaPDF\bin\Debug\LibreriaPDF.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

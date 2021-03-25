@@ -51,6 +51,17 @@ namespace ServiceInvioMail
             }
         }
 
+        public DataSet GetMaterialiMancanti()
+        {
+
+            DbCommand cmd = CreateCommand("PR_MaterialeSottoMinimo", true);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+            var lst = base.GetDataSet(cmd);
+
+            return lst;
+        }
+
 
     }
 }
