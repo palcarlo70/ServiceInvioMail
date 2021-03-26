@@ -30,7 +30,7 @@ namespace ServiceInvioMail
 
         }
 
-        public void SaveMailLog(string commenti, int? esito, int? tipo)
+        public bool SaveMailLog(string commenti, int? esito, int? tipo)
         {
             try
             {
@@ -47,8 +47,10 @@ namespace ServiceInvioMail
             }
             catch (Exception e)
             {
-
+                return false;
             }
+
+            return true;
         }
 
         public DataSet GetMaterialiMancanti()
@@ -61,7 +63,6 @@ namespace ServiceInvioMail
 
             return lst;
         }
-
-
+ 
     }
 }

@@ -54,7 +54,7 @@ namespace ServiceInvioMail
             return lst;
         }
 
-        public async Task<bool> ControlloCarenzeMagazzino(string conNection, string percorso) //string percorso = Server.MapPath("~/");
+        public  bool ControlloCarenzeMagazzino(string conNection, string percorso) //string percorso = Server.MapPath("~/");
         {
 
             var lst = GetMaterialiMancantiCon(conNection);
@@ -66,13 +66,13 @@ namespace ServiceInvioMail
                 var fileStampa = crea.StampaListaMateriali(percorso, "LstMateriali", campi);
 
                 var mailImpo = GetMailImpo(1, conNection);
-                await SendMailAsyncNew(mailImpo, fileStampa, conNection);
+                SendMailAsyncNew(mailImpo, fileStampa, conNection);
                 return true;
             }
             return false;
         }
 
-        public async Task<bool> SendMailAsyncNew(MailDto impoMail, string fileAllegato, string conNection)
+        public  bool SendMailAsyncNew(MailDto impoMail, string fileAllegato, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
             var mailLog = new MailLogDto();
@@ -121,7 +121,7 @@ namespace ServiceInvioMail
                 //allego il file creato
                 if (!string.IsNullOrEmpty(fileAllegato)) mail.Attachments.Add(new Attachment(fileAllegato));
 
-                await smtpServer.SendMailAsync(mail);
+                smtpServer.Send(mail);
 
                 mailLog.Esito = 1;
             }
@@ -161,5 +161,6 @@ namespace ServiceInvioMail
             return lst;
         }
 
+       
     }
 }
