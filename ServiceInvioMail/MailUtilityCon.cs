@@ -170,7 +170,7 @@ namespace ServiceInvioMail
             catch (Exception ex)
             {
                 mailLog.Commenti =
-                    $"Invio file a {impoMail.Destinatario}; Errore: {ex.Message}";
+                    $"Invio file a {impoMail.Destinatario} - Lista {impoMail.DestinatarioLst}; Errore: {ex.Message}";
                 mailLog.Esito = 0;
             }
 
