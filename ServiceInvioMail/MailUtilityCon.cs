@@ -159,7 +159,7 @@ namespace ServiceInvioMail
 
                 mail.Body = bd;
 
-                mailLog.Commenti = $"Invio file a {impoMail.Destinatario ?? impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: Numero Articoli trovati:{numRecord}; ";
+                mailLog.Commenti = $"Invio file a {impoMail.Destinatario} Lista {impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: { impoMail.Messaggio}; ";
 
                 mail.Priority = MailPriority.High;
                 
