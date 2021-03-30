@@ -124,12 +124,18 @@ namespace ServiceInvioMail
 
                 mail.From = new MailAddress(impoMail.UtenteFiguraInvio, impoMail.NominativoInvio);
 
+                List<string> destinatario = new List<string>();
+
                 if (impoMail.Destinatario != null)
                 {
-                    var destinatario = impoMail.Destinatario.Split(';').Select(s => s.Replace(";", "")).ToList();
+                    destinatario = impoMail.Destinatario.Split(';').Select(s => s.Replace(";", "")).ToList();
 
-                    if (!string.IsNullOrEmpty(impoMail.DestinatarioLst) && impoMail.DestinatarioLst.Length > 0) destinatario = impoMail.DestinatarioLst.Split(';').Select(s => s.Replace(";", "")).ToList();
+                }
 
+                if (!string.IsNullOrEmpty(impoMail.DestinatarioLst) && impoMail.DestinatarioLst.Length > 0) destinatario.AddRange(impoMail.DestinatarioLst.Split(';').Select(s => s.Replace(";", "")).ToList());
+
+                if (destinatario.Count > 0)
+                {
                     foreach (var dest in destinatario)
                     {
                         if (!string.IsNullOrEmpty(dest.Trim())) mail.To.Add(dest.Trim());
