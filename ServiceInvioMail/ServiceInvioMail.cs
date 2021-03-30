@@ -16,31 +16,31 @@ namespace ServiceInvioMail
     public partial class ServiceInvioMail : ServiceBase
     {
         private int eventId = 1;
+        private static string conNection = "Data Source=10.10.9.4;database=AVdbProd; Integrated Security=false;User ID=UserNetwork;Password=Server2017;";
+
 
         public ServiceInvioMail()
         {
             InitializeComponent();
-            //eventLog1 = new System.Diagnostics.EventLog();
-            //if (!System.Diagnostics.EventLog.SourceExists("MySource"))
-            //{
-            //    System.Diagnostics.EventLog.CreateEventSource("MySource", "MyNewLog");
-            //}
-            //eventLog1.Source = "MySource";
-            //eventLog1.Log = "MyNewLog";
         }
 
         protected override void OnStart(string[] args)
         {
-            DateTime now = DateTime.Now;
-            if (now.Hour > 6 && now.Hour < 20)
+            try
             {
-                var timerClock = System.Configuration.ConfigurationManager.AppSettings["timerClock"];
-
-                Timer timer = new Timer();
-                timer.Interval = Convert.ToDouble(timerClock); // 3600 seconds = 1 Ora
-                timer.Elapsed += new ElapsedEventHandler(this.OnTimer);
-                timer.Start();
+                var r = new MailUtilityCon();
+                r.ControlloCarenzeMagazzino(conNection, "");
             }
+            catch (Exception)
+            {
+
+            }
+
+            Timer timer = new Timer();
+            timer.Interval = Convert.ToDouble(360000); // 360000 seconds = 1 Ora
+            timer.Elapsed += new ElapsedEventHandler(this.OnTimer);
+            timer.Start();
+
             //eventLog1.WriteEntry("In OnStart.");
         }
 
@@ -61,10 +61,8 @@ namespace ServiceInvioMail
             {
                 try
                 {
-                    var myConnect = System.Configuration.ConfigurationManager.AppSettings["DbConnection"];
-
                     var r = new MailUtilityCon();
-                    r.ControlloCarenzeMagazzino(myConnect,"");
+                    r.ControlloCarenzeMagazzino(conNection, "");
                 }
                 catch (Exception)
                 {
