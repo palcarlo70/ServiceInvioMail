@@ -43,7 +43,10 @@
       <HintPath>..\..\..\AvalonNetworkNew\LibreriaPDF\bin\Debug\LibreriaPDF.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -56,6 +59,12 @@
     <Compile Include="Classi.cs" />
     <Compile Include="MailUtilityCon.cs" />
     <Compile Include="MaylUtilityDac.cs" />
+    <Compile Include="ProjectInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ProjectInstaller.Designer.cs">
+      <DependentUpon>ProjectInstaller.cs</DependentUpon>
+    </Compile>
     <Compile Include="ServiceInvioMail.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -69,6 +78,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="ProjectInstaller.resx">
+      <DependentUpon>ProjectInstaller.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ServiceInvioMail.resx">
       <DependentUpon>ServiceInvioMail.cs</DependentUpon>
     </EmbeddedResource>

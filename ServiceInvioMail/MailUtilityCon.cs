@@ -13,6 +13,8 @@ namespace ServiceInvioMail
 {
     public class MailUtilityCon
     {
+        private Task _proccessSmsQueueTask;
+
         public MailDto GetMailImpo(int idImpo, string conNection)
         {
             MailDto lst = new MailDto();
@@ -54,30 +56,52 @@ namespace ServiceInvioMail
             return lst;
         }
 
-        public  bool ControlloCarenzeMagazzino(string conNection, string percorso) //string percorso = Server.MapPath("~/");
+        public bool ControlloCarenzeMagazzino(string conNection, string percorso) //string percorso = Server.MapPath("~/");
         {
-
-            var lst = GetMaterialiMancantiCon(conNection);
+            var conn = new MailUtilityCon();
+            var lst = conn.GetMaterialiMancantiCon(conNection);
             if (lst.Count > 0)
             {
-                var campi = lst.Select(aa => new CampiPdf { Campo1 = aa.IdArticolo, Campo2 = aa.DescriArticolo, Campo3 = aa.QuantiInMagazzino.ToString(), Campo4 = aa.MinMagazzino.ToString() }).ToList();
-
-                var crea = new LibreriaPDF.PdfGenerici();
-                var fileStampa = crea.StampaListaMateriali(percorso, "LstMateriali", campi);
-
-                var mailImpo = GetMailImpo(1, conNection);
-                SendMailAsyncNew(mailImpo, fileStampa, conNection);
-                return true;
+                _proccessSmsQueueTask = Task.Run(() => DoWorkAsync(lst, percorso, lst.Count, conNection));
             }
-            return false;
+            return true;
         }
 
-        public  bool SendMailAsyncNew(MailDto impoMail, string fileAllegato, string conNection)
+        public async Task DoWorkAsync(List<Articoli> lst, string percorso, int numRecord, string conNection)
+        {
+
+            try
+            {
+
+                var impoMail = GetMailImpo(1, conNection);
+                string textBody = " <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
+
+                foreach (var l in lst)
+                {
+                    textBody += "<tr><td>" + l.IdArticolo + "</td><td> " + l.DescriArticolo + "</td><td>" + l.MinMagazzino + "</td><td> " + l.QuantiInMagazzino + "</td> </tr>";
+                }
+
+                textBody += "</table>";
+
+                await SendMailAsyncNew(impoMail, textBody, numRecord, conNection);
+            }
+            catch (Exception e)
+            {
+                //salvo il log della spedizione effettuata
+                var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
+                conMail.SaveMailLog($"ERRORE: {e.Message} - SOURCE: {e.Source}", 0, 1);
+            }
+
+
+
+        }
+
+        public async Task SendMailAsyncNew(MailDto impoMail, string txtBody, int numRecord, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
             var mailLog = new MailLogDto();
             mailLog.Data = DateTime.Now;
-            mailLog.Commenti = $"Invio file a {impoMail.Destinatario ?? impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: { impoMail.Messaggio}; ";
+            
             try
             {
                 var mail = new System.Net.Mail.MailMessage();
@@ -100,28 +124,40 @@ namespace ServiceInvioMail
 
                 mail.From = new MailAddress(impoMail.UtenteFiguraInvio, impoMail.NominativoInvio);
 
-                var destinatario = impoMail.Destinatario.Split(';').Select(s => s.Replace(";", "")).ToList();
-                foreach (var dest in destinatario)
+                if (impoMail.Destinatario != null)
                 {
-                    mail.To.Add(dest.Trim());
+                    var destinatario = impoMail.Destinatario.Split(';').Select(s => s.Replace(";", "")).ToList();
+
+                    if (!string.IsNullOrEmpty(impoMail.DestinatarioLst) && impoMail.DestinatarioLst.Length > 0) destinatario = impoMail.DestinatarioLst.Split(';').Select(s => s.Replace(";", "")).ToList();
+
+                    foreach (var dest in destinatario)
+                    {
+                        if (!string.IsNullOrEmpty(dest.Trim())) mail.To.Add(dest.Trim());
+                    }
                 }
 
                 var destinatarioCc = impoMail.Cc.Split(';').Select(s => s.Replace(";", "")).ToList();
                 foreach (var dest in destinatarioCc)
                 {
-                    mail.CC.Add(dest.Trim());
+                    if (!string.IsNullOrEmpty(dest.Trim())) mail.CC.Add(dest.Trim());
                 }
 
                 mail.Subject = impoMail.Oggetto;
-                mail.Body = impoMail.Messaggio.Length > 3850 ? impoMail.Messaggio.Substring(0, 3850) : impoMail.Messaggio; //limito la lunghezza del mesaggio
+
+                var bd = impoMail.Messaggio.Length > 3850 ? impoMail.Messaggio.Substring(0, 3850) : impoMail.Messaggio; //limito la lunghezza del mesaggio
+
+                bd += "<br /> <br />";
+                bd += $"<b>Numero Articoli trovati:{numRecord}</b>";
+                bd += "<br /> <br />";
+                bd += txtBody;
+
+                mail.Body = bd;
+
+                mailLog.Commenti = $"Invio file a {impoMail.Destinatario ?? impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: Numero Articoli trovati:{numRecord}; ";
 
                 mail.Priority = MailPriority.High;
-
-                //string file = @"TxtCreateFileDaLista(lstValor, pr); pr.OutputFileName = $""PresenzeDSGroup_{mese}_{anno}.pdf""; string fileStampa = GenerateReport(mese, anno, 0, pr, null, giornoMax, giornoDal);";
-                //allego il file creato
-                if (!string.IsNullOrEmpty(fileAllegato)) mail.Attachments.Add(new Attachment(fileAllegato));
-
-                smtpServer.Send(mail);
+                
+                await smtpServer.SendMailAsync(mail);
 
                 mailLog.Esito = 1;
             }
@@ -131,10 +167,12 @@ namespace ServiceInvioMail
                     $"Invio file a {impoMail.Destinatario}; Errore: {ex.Message}";
                 mailLog.Esito = 0;
             }
+
             //salvo il log della spedizione effettuata
             conMail.SaveMailLog(mailLog.Commenti, mailLog.Esito, mailLog.Tipo);
-            return true;
         }
+
+
 
         public List<Articoli> GetMaterialiMancantiCon(string conAVdb)
         {
@@ -161,6 +199,6 @@ namespace ServiceInvioMail
             return lst;
         }
 
-       
+
     }
 }
