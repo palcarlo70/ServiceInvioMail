@@ -76,7 +76,7 @@ namespace ServiceInvioMail
 
 
                 var impoMail = GetMailImpo(1, conNection);
-                string textBody = "<h2 >Articoli carenti INTERNI </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
+                string textBody = "<h2 >ARTICOLI LAVORATI carenti </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
 
                 foreach (var l in lst.Where(c => c.ArtInternoEsterno == 1))
                 {
@@ -86,7 +86,7 @@ namespace ServiceInvioMail
                 textBody += "</table> <br/>";
 
 
-                textBody += "<h2 >Articoli carenti ESTERNI </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
+                textBody += "<h2 >MATERIALI di CONSUMO carenti </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
 
                 foreach (var l in lst.Where(c => c.ArtInternoEsterno == 0))
                 {

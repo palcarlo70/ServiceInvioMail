@@ -40,8 +40,8 @@ namespace ServiceInvioMail
             // 
             // serviceInstaller1
             // 
-            this.serviceInstaller1.Description = "Servizio di controllo dei materiali carnti";
-            this.serviceInstaller1.DisplayName = "Servizio Allert Mail";
+            this.serviceInstaller1.Description = "Servizio di controllo dei materiali carenti by C.Pallotta";
+            this.serviceInstaller1.DisplayName = "ServiceInvioMail";
             this.serviceInstaller1.ServiceName = "ServiceInvioMail";
             this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 
