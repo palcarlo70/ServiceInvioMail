@@ -61,8 +61,9 @@ namespace ServiceInvioMail
             public string DescriArticolo { get; set; }
             public int? QuantiInMagazzino { get; set; }
             public int? MinMagazzino { get; set; }
+            public int? ArtInternoEsterno { get; set; }
 
-        }
+    }
 
         //public class CampiPdf
         //{

@@ -72,16 +72,29 @@ namespace ServiceInvioMail
 
             try
             {
+                /*<h2 >Articoli carenti INTERNI  </h2>*/
+
 
                 var impoMail = GetMailImpo(1, conNection);
-                string textBody = " <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
+                string textBody = "<h2 >Articoli carenti INTERNI </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
 
-                foreach (var l in lst)
+                foreach (var l in lst.Where(c => c.ArtInternoEsterno == 1))
+                {
+                    textBody += "<tr><td>" + l.IdArticolo + "</td><td> " + l.DescriArticolo + "</td><td>" + l.MinMagazzino + "</td><td> " + l.QuantiInMagazzino + "</td> </tr>";
+                }
+
+                textBody += "</table> <br/>";
+
+
+                textBody += "<h2 >Articoli carenti ESTERNI </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
+
+                foreach (var l in lst.Where(c => c.ArtInternoEsterno == 0))
                 {
                     textBody += "<tr><td>" + l.IdArticolo + "</td><td> " + l.DescriArticolo + "</td><td>" + l.MinMagazzino + "</td><td> " + l.QuantiInMagazzino + "</td> </tr>";
                 }
 
                 textBody += "</table>";
+
 
                 await SendMailAsyncNew(impoMail, textBody, numRecord, conNection);
             }
@@ -195,7 +208,8 @@ namespace ServiceInvioMail
                            IdArticolo = dr["IdArticolo"].ToString(),
                            DescriArticolo = dr["Descrizione"].ToString(),
                            QuantiInMagazzino = !dr.IsNull("Quantita") ? Convert.ToInt32(dr["Quantita"].ToString()) : 0,
-                           MinMagazzino = !dr.IsNull("MinMagazzino") ? Convert.ToInt32(dr["MinMagazzino"].ToString()) : 0
+                           MinMagazzino = !dr.IsNull("MinMagazzino") ? Convert.ToInt32(dr["MinMagazzino"].ToString()) : 0,
+                           ArtInternoEsterno = !dr.IsNull("IdTipo") ? Convert.ToInt32(dr["IdTipo"].ToString())==16 ? 1:0 : 0
                        }).ToList();
             }
             catch (Exception e)
