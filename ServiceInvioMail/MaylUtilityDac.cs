@@ -63,6 +63,15 @@ namespace ServiceInvioMail
 
             return lst;
         }
- 
+        public DataSet GetLstInvioMailDaInviare()
+        {
+
+            DbCommand cmd = CreateCommand("scz.SP_GET_EmailDaInviare", true);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+            var lst = base.GetDataSet(cmd);
+
+            return lst;
+        }
     }
 }

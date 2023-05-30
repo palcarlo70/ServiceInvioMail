@@ -67,6 +67,19 @@ namespace ServiceInvioMail
             return true;
         }
 
+        public bool ControlloInvioMail(string conNection, string percorso) //string percorso = Server.MapPath("~/");
+        {
+            var conn = new MailUtilityCon();
+            var lst = conn.GetLstInvioMailDaInviare(conNection);
+
+            if (lst.Count > 0)
+            {
+                _proccessSmsQueueTask = Task.Run(() => DoWorkAsync(lst, percorso, lst.Count, conNection));
+            }
+
+            return true;
+        }
+
         public async Task DoWorkAsync(List<Articoli> lst, string percorso, int numRecord, string conNection)
         {
 
@@ -109,12 +122,118 @@ namespace ServiceInvioMail
 
         }
 
+        public async Task SendMailkAsync(List<AvvisiDaInviare> lst, string percorso, int numRecord, string conNection)
+        {
+
+            try
+            {
+                /*<h2 >Articoli carenti INTERNI  </h2>*/
+
+
+                var impoMail = GetMailImpo(1, conNection);
+                
+
+                foreach (var l in lst)
+                {
+                    impoMail.Oggetto = l.Oggetto;
+                    await SendMailAsyncNew(impoMail, textBody, numRecord, conNection);
+                }
+
+
+
+
+            }
+            catch (Exception e)
+            {
+                //salvo il log della spedizione effettuata
+                var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
+                conMail.SaveMailLog($"ERRORE: {e.Message} - SOURCE: {e.Source}", 0, 1);
+            }
+
+
+
+        }
+
+        public async Task SendMailAsyncNew(MailDto impoMail, string conNection)
+        {
+            var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
+            var mailLog = new MailLogDto();
+            mailLog.Data = DateTime.Now;
+
+            try
+            {
+                var mail = new System.Net.Mail.MailMessage();
+                var smtpServer = new SmtpClient();
+
+                mail.SubjectEncoding = System.Text.Encoding.UTF8;
+                mail.BodyEncoding = System.Text.Encoding.UTF8;
+                mail.IsBodyHtml = true;
+
+                smtpServer.Host = impoMail.SmtPostaUscita;
+                if (impoMail.UseDefaultCredential != null)
+                    smtpServer.UseDefaultCredentials = (bool)impoMail.UseDefaultCredential;
+
+                smtpServer.DeliveryMethod = SmtpDeliveryMethod.Network;
+                smtpServer.Port = impoMail.SmtpPort;
+
+                smtpServer.Credentials = new System.Net.NetworkCredential(impoMail.UserMail, impoMail.Password);
+                if (impoMail.SsLAuto != null) smtpServer.EnableSsl = (bool)impoMail.SsLAuto;
+
+
+                mail.From = new MailAddress(impoMail.UtenteFiguraInvio, impoMail.NominativoInvio);
+
+                List<string> destinatario = new List<string>();
+
+                if (impoMail.Destinatario != null)
+                {
+                    destinatario = impoMail.Destinatario.Split(';').Select(s => s.Replace(";", "")).ToList();
+
+                }
+
+                if (!string.IsNullOrEmpty(impoMail.DestinatarioLst) && impoMail.DestinatarioLst.Length > 0) destinatario.AddRange(impoMail.DestinatarioLst.Split(';').Select(s => s.Replace(";", "")).ToList());
+
+                if (destinatario.Count > 0)
+                {
+                    foreach (var dest in destinatario)
+                    {
+                        if (!string.IsNullOrEmpty(dest.Trim())) mail.To.Add(dest.Trim());
+                    }
+                }
+
+                var destinatarioCc = impoMail.Cc.Split(';').Select(s => s.Replace(";", "")).ToList();
+                foreach (var dest in destinatarioCc)
+                {
+                    if (!string.IsNullOrEmpty(dest.Trim())) mail.CC.Add(dest.Trim());
+                }
+
+                mail.Subject = impoMail.Oggetto;
+
+                mail.Body = impoMail.Messaggio;
+
+                mailLog.Commenti = $"Invio file a {impoMail.Destinatario} Lista {impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: { impoMail.Messaggio}; ";
+
+                mail.Priority = MailPriority.High;
+
+                await smtpServer.SendMailAsync(mail);
+
+                mailLog.Esito = 1;
+            }
+            catch (Exception ex)
+            {
+                mailLog.Commenti =
+                    $"Invio file a {impoMail.Destinatario} - Lista {impoMail.DestinatarioLst}; Errore: {ex.Message}";
+                mailLog.Esito = 0;
+            }
+
+            //salvo il log della spedizione effettuata
+            conMail.SaveMailLog(mailLog.Commenti, mailLog.Esito, mailLog.Tipo);
+        }
         public async Task SendMailAsyncNew(MailDto impoMail, string txtBody, int numRecord, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
             var mailLog = new MailLogDto();
             mailLog.Data = DateTime.Now;
-            
+
             try
             {
                 var mail = new System.Net.Mail.MailMessage();
@@ -175,7 +294,7 @@ namespace ServiceInvioMail
                 mailLog.Commenti = $"Invio file a {impoMail.Destinatario} Lista {impoMail.DestinatarioLst}; CC {impoMail.Cc}; messaggio: { impoMail.Messaggio}; ";
 
                 mail.Priority = MailPriority.High;
-                
+
                 await smtpServer.SendMailAsync(mail);
 
                 mailLog.Esito = 1;
@@ -209,7 +328,32 @@ namespace ServiceInvioMail
                            DescriArticolo = dr["Descrizione"].ToString(),
                            QuantiInMagazzino = !dr.IsNull("Quantita") ? Convert.ToInt32(dr["Quantita"].ToString()) : 0,
                            MinMagazzino = !dr.IsNull("MinMagazzino") ? Convert.ToInt32(dr["MinMagazzino"].ToString()) : 0,
-                           ArtInternoEsterno = !dr.IsNull("IdTipo") ? Convert.ToInt32(dr["IdTipo"].ToString())==16 ? 1:0 : 0
+                           ArtInternoEsterno = !dr.IsNull("IdTipo") ? Convert.ToInt32(dr["IdTipo"].ToString()) == 16 ? 1 : 0 : 0
+                       }).ToList();
+            }
+            catch (Exception e)
+            {
+
+            }
+            return lst;
+        }
+
+        public List<AvvisiDaInviare> GetLstInvioMailDaInviare(string conDb)
+        {
+            var lst = new List<AvvisiDaInviare>();
+
+            try
+            {
+                var inDb = new MaylUtilityDac("System.Data.SqlClient", conDb);
+                var ds = inDb.GetLstInvioMailDaInviare();
+
+                lst = (from DataRow dr in ds.Tables[0].Rows
+                       select new AvvisiDaInviare()
+                       {
+                           IdAvviso = dr["Id"].ToString(),
+                           DataInvioProgrammata = !dr.IsNull("DataInvio") ? DateTime.Parse(dr["DataInvio"].ToString()) : (DateTime?)null,
+                           Oggetto = dr["Oggetto"].ToString(),
+                           Messaggio = dr["Messaggio"].ToString()
                        }).ToList();
             }
             catch (Exception e)
