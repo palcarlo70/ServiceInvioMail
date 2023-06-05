@@ -7,7 +7,6 @@ using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Avalon.EntityDto;
 
 namespace ServiceInvioMail
 {
@@ -67,26 +66,53 @@ namespace ServiceInvioMail
             return true;
         }
 
-        public bool ControlloInvioMail(string conNection, string percorso) //string percorso = Server.MapPath("~/");
+        public bool ControlloInvioMail(string conNection) //string percorso = Server.MapPath("~/");
         {
             var conn = new MailUtilityCon();
             var lst = conn.GetLstInvioMailDaInviare(conNection);
 
             if (lst.Count > 0)
             {
-                _proccessSmsQueueTask = Task.Run(() => DoWorkAsync(lst, percorso, lst.Count, conNection));
+                _proccessSmsQueueTask = Task.Run(() => DoWorkSendMailAvvisiAsync(lst, conNection));
             }
 
             return true;
         }
 
+        public async Task DoWorkSendMailAvvisiAsync(List<AvvisiDaInviare> lst, string conNection)
+        {
+            try
+            {
+                var impoMail = GetMailImpo(1, conNection);
+                string textBody = "";
+
+                foreach (var l in lst)
+                {
+                    impoMail.Oggetto = l.Oggetto;
+                    impoMail.Messaggio = l.Messaggio;                             
+                    impoMail.Destinatario = l.Destinatario;
+                    await SendMailAsyncNew(impoMail, textBody, 0, 1, conNection);
+                    
+
+                }
+
+                
+            }
+            catch (Exception e)
+            {
+                //salvo il log della spedizione effettuata
+                var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
+                conMail.SaveMailLog($"ERRORE: {e.Message} - SOURCE: {e.Source}", 0, 1);
+
+            }
+
+        }
+
         public async Task DoWorkAsync(List<Articoli> lst, string percorso, int numRecord, string conNection)
         {
-
             try
             {
                 /*<h2 >Articoli carenti INTERNI  </h2>*/
-
 
                 var impoMail = GetMailImpo(1, conNection);
                 string textBody = "<h2 >ARTICOLI LAVORATI carenti </h2> <br/> <table border=" + 1 + " cellpadding=" + 0 + " cellspacing=" + 0 + " width = " + 700 + " style='border: 0.5px;'><tr bgcolor='#4da6ff'><td style='width:15%; text-align: center;'><b>Cod Articolo</b></td> <td style='text-align: center;'> <b> Descrizione</b> </td><td style='text-align: center;'><b>Min Maga</b></td> <td style='text-align: center;'> <b> Q.T.</b> </td></tr>";
@@ -108,8 +134,7 @@ namespace ServiceInvioMail
 
                 textBody += "</table>";
 
-
-                await SendMailAsyncNew(impoMail, textBody, numRecord, conNection);
+                await SendMailAsyncNew(impoMail, textBody, numRecord,0, conNection);
             }
             catch (Exception e)
             {
@@ -118,43 +143,10 @@ namespace ServiceInvioMail
                 conMail.SaveMailLog($"ERRORE: {e.Message} - SOURCE: {e.Source}", 0, 1);
             }
 
-
-
         }
 
-        public async Task SendMailkAsync(List<AvvisiDaInviare> lst, string percorso, int numRecord, string conNection)
-        {
 
-            try
-            {
-                /*<h2 >Articoli carenti INTERNI  </h2>*/
-
-
-                var impoMail = GetMailImpo(1, conNection);
-                
-
-                foreach (var l in lst)
-                {
-                    impoMail.Oggetto = l.Oggetto;
-                    await SendMailAsyncNew(impoMail, textBody, numRecord, conNection);
-                }
-
-
-
-
-            }
-            catch (Exception e)
-            {
-                //salvo il log della spedizione effettuata
-                var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
-                conMail.SaveMailLog($"ERRORE: {e.Message} - SOURCE: {e.Source}", 0, 1);
-            }
-
-
-
-        }
-
-        public async Task SendMailAsyncNew(MailDto impoMail, string conNection)
+        public async Task SendMailPromemoria(MailDto impoMail, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
             var mailLog = new MailLogDto();
@@ -228,7 +220,7 @@ namespace ServiceInvioMail
             //salvo il log della spedizione effettuata
             conMail.SaveMailLog(mailLog.Commenti, mailLog.Esito, mailLog.Tipo);
         }
-        public async Task SendMailAsyncNew(MailDto impoMail, string txtBody, int numRecord, string conNection)
+        public async Task SendMailAsyncNew(MailDto impoMail, string txtBody, int numRecord, int aggioMailSend, string conNection)
         {
             var conMail = new MaylUtilityDac("System.Data.SqlClient", conNection);
             var mailLog = new MailLogDto();
@@ -283,11 +275,14 @@ namespace ServiceInvioMail
                 mail.Subject = impoMail.Oggetto;
 
                 var bd = impoMail.Messaggio.Length > 3850 ? impoMail.Messaggio.Substring(0, 3850) : impoMail.Messaggio; //limito la lunghezza del mesaggio
-
-                bd += "<br /> <br />";
-                bd += $"<b>Numero Articoli trovati:{numRecord}</b>";
-                bd += "<br /> <br />";
-                bd += txtBody;
+                if (numRecord > 0)
+                {
+                    bd += "<br /> <br />";
+                    bd += $"<b>Numero Articoli trovati:{numRecord}</b>";
+                    bd += "<br /> <br />";
+                }
+                 if(txtBody!= "")
+                    bd += txtBody;
 
                 mail.Body = bd;
 
@@ -306,6 +301,10 @@ namespace ServiceInvioMail
                 mailLog.Esito = 0;
             }
 
+            if(aggioMailSend== 1)//aggiornamento del campo mail
+            {
+
+            }
             //salvo il log della spedizione effettuata
             conMail.SaveMailLog(mailLog.Commenti, mailLog.Esito, mailLog.Tipo);
         }
@@ -353,7 +352,8 @@ namespace ServiceInvioMail
                            IdAvviso = dr["Id"].ToString(),
                            DataInvioProgrammata = !dr.IsNull("DataInvio") ? DateTime.Parse(dr["DataInvio"].ToString()) : (DateTime?)null,
                            Oggetto = dr["Oggetto"].ToString(),
-                           Messaggio = dr["Messaggio"].ToString()
+                           Messaggio = dr["Messaggio"].ToString(),
+                           Destinatario = dr["Email"].ToString()
                        }).ToList();
             }
             catch (Exception e)

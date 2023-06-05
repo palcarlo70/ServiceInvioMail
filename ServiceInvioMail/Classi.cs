@@ -71,7 +71,7 @@ namespace ServiceInvioMail
         public string IdAvviso { get; set; }
         public DateTime? DataInvioProgrammata { get; set; }
         public string Oggetto { get; set; }
-        public string Messaggio { get; set; }
+        public string Messaggio { get; set; }       public string Destinatario { get; set; }
 
     }
 
